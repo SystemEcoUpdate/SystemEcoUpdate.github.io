@@ -1,0 +1,1190 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>SystemEcoUpdate</title>
+
+<style>
+  :root{
+    --xp-blue:#0a246a;
+    --xp-blue2:#3a6ea5;
+    --win-gray:#c0c0c0;
+    --win-shadow:#404040;
+
+    /* ===== Frame tuning (easy to adjust) ===== */
+    --frame-w: min(900px, 86vw);
+    --frame-shift-x: 0px;
+    --frame-shift-y: -40px;
+
+    --inner-left: 60px;
+    --inner-right: 55px;
+    --inner-top: 85px;
+    --inner-bottom: 150px;
+
+    /* =========================================================
+       手动定位：这些值相对 news_long.png 显示区域（.newsPage）
+       x/y 用 %：left/top
+       w/h 用 %：width/height
+       ========================================================= */
+
+    /* --- Card slots (flip area) --- */
+    --slot1-x: 7.9%;
+    --slot1-y: 23.8%;
+    --slot1-w: 23.0%;
+    --slot1-h: 4.6%;
+
+    --slot2-x: 38.4%;
+    --slot2-y: 23.8%;
+    --slot2-w: 23.0%;
+    --slot2-h: 4.6%;
+
+    --slot3-x: 68.9%;
+    --slot3-y: 23.8%;
+    --slot3-w: 23.0%;
+    --slot3-h: 4.6%;
+
+    /* --- Click hotspots (the “click” button area) --- */
+    --hot1-x: 11.5%;
+    --hot1-y: 28.5%;
+    --hot1-w: 16.5%;
+    --hot1-h: 0.7%;
+
+    --hot2-x: 42.0%;
+    --hot2-y: 28.5%;
+    --hot2-w: 16.5%;
+    --hot2-h: 0.7%;
+
+    --hot3-x: 72.5%;
+    --hot3-y: 28.5%;
+    --hot3-w: 16.5%;
+    --hot3-h: 0.7%;
+
+    /* --- More news text hotspots --- */
+    --more1-x: 8.8%;
+    --more1-y: 45.6%;
+    --more1-w: 16.0%;
+    --more1-h: 1.7%;
+
+    --more2-x: 32.4%;
+    --more2-y: 45.6%;
+    --more2-w: 16.0%;
+    --more2-h: 1.7%;
+
+    --more3-x: 52.0%;
+    --more3-y: 45.6%;
+    --more3-w: 16.0%;
+    --more3-h: 1.7%;
+
+    --more4-x: 74.0%;
+    --more4-y: 45.6%;
+    --more4-w: 16.0%;
+    --more4-h: 1.7%;
+
+    /* --- Read more hotspot --- */
+    --readmore-x: 85%;
+    --readmore-y: 22.6%;
+    --readmore-w: 9%;
+    --readmore-h: 0.5%;
+  }
+
+  html,body{margin:0;height:100%;overflow:hidden;background:#000;}
+  body,*{
+    cursor: default;
+    cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32'%3E%3Cpath d='M3 2 L3 26 L9 20 L13 30 L17 28 L13 18 L21 18 Z' fill='white' stroke='black' stroke-width='2'/%3E%3C/svg%3E") 3 2, default;
+  }
+
+  /* ===== Desktop background ===== */
+  #desktop{
+    position:fixed; inset:0;
+    background: url("bg.jpg") center/cover no-repeat;
+    user-select:none;
+    z-index:0;
+  }
+  #desktop::before{
+    content:"";
+    position:absolute; inset:0;
+    background: repeating-linear-gradient(
+      90deg,
+      rgba(255,255,255,.07),
+      rgba(255,255,255,.07) 1px,
+      rgba(0,0,0,0) 1px,
+      rgba(0,0,0,0) 4px
+    );
+    opacity:.16;
+    pointer-events:none;
+  }
+
+  #iconColumn{
+    position:absolute;
+    left:18px; top:18px;
+    display:flex; flex-direction:column;
+    gap:14px;
+    z-index:2;
+  }
+  .deskIcon{
+    width:84px;
+    text-align:center;
+    color:#fff;
+    font-family:"MS Sans Serif", Tahoma, Arial, sans-serif;
+    font-size:12px;
+    text-shadow:0 1px 2px rgba(0,0,0,.8);
+    user-select:none;
+  }
+  .deskIcon .ico{
+    width:44px;height:44px;margin:0 auto 6px;
+    border:1px solid rgba(255,255,255,.25);
+    background:rgba(0,0,0,.20);
+    box-shadow: inset 0 0 0 1px rgba(0,0,0,.75);
+  }
+  .deskIcon .label{
+    padding:2px 4px;
+    border-radius:2px;
+    display:inline-block;
+  }
+  .deskIcon.selected .label{
+    background:rgba(0,120,215,.55);
+    outline:1px dotted rgba(255,255,255,.75);
+  }
+
+  #ecoApp.appear{
+    display:block !important;
+    animation: popin .55s ease-out both;
+  }
+  @keyframes popin{
+    from{opacity:0;transform:translateY(6px) scale(.98)}
+    to{opacity:1;transform:translateY(0) scale(1)}
+  }
+
+  /* Taskbar */
+  #taskbar{
+    position:absolute; left:0; right:0; bottom:0;
+    height:38px;
+    background:var(--win-gray);
+    border-top:2px solid #ffffff;
+    box-shadow: 0 -2px 0 var(--win-shadow);
+    display:flex; align-items:center;
+    padding:0 8px;
+    font-family:"MS Sans Serif", Tahoma, Arial, sans-serif;
+    z-index:3;
+  }
+  #startBtn{
+    display:flex; align-items:center; gap:6px;
+    background:var(--win-gray);
+    border: 2px solid #ffffff;
+    border-right-color:var(--win-shadow);
+    border-bottom-color:var(--win-shadow);
+    padding:4px 10px;
+    font-size:12px;
+  }
+  #tray{
+    margin-left:auto;
+    display:flex; align-items:center;
+    font-size:12px; color:#000;
+    padding:0 8px;
+    border: 2px solid #ffffff;
+    border-right-color:var(--win-shadow);
+    border-bottom-color:var(--win-shadow);
+    height:24px;
+  }
+
+  /* ===== Window layer ===== */
+  #windowLayer{
+    position:fixed; inset:0;
+    z-index:10;
+    background:rgba(0,0,0,.12);
+    display:none;
+  }
+
+  /* ===== Win95 window (install + terminal) ===== */
+  .win95{
+    position:absolute;
+    background:var(--win-gray);
+    border: 2px solid #ffffff;
+    border-right-color:var(--win-shadow);
+    border-bottom-color:var(--win-shadow);
+    box-shadow: 2px 2px 0 #000;
+    color:#000;
+    user-select:none;
+  }
+  .win95 .titlebar{
+    height: 22px;
+    background: linear-gradient(90deg, var(--xp-blue), var(--xp-blue2));
+    color:#fff;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:0 6px;
+    box-sizing:border-box;
+    font: 12px/1.2 "MS Sans Serif", Tahoma, Arial, sans-serif;
+  }
+  .win95 .titlebar .left{display:flex;align-items:center;gap:6px}
+  .win95 .icon{
+    width:14px;height:14px;background:#ffcc00;border:1px solid #000;
+    box-shadow:inset 0 0 0 1px rgba(255,255,255,.35);
+  }
+  .win95 .controls{display:flex; gap:2px;}
+  .win95 .btnbox{
+    width:16px;height:14px;
+    background:var(--win-gray);
+    border: 1px solid #ffffff;
+    border-right-color:var(--win-shadow);
+    border-bottom-color:var(--win-shadow);
+  }
+  .win95 .body{
+    padding:10px 10px 12px;
+    font: 12px/1.4 "MS Sans Serif", Tahoma, Arial, sans-serif;
+    background:var(--win-gray);
+  }
+  .win95 .actions{
+    display:flex; justify-content:flex-end; gap:8px; margin-top:10px;
+  }
+  .wbtn{
+    min-width: 92px;
+    padding:4px 10px;
+    background:var(--win-gray);
+    border: 2px solid #ffffff;
+    border-right-color:var(--win-shadow);
+    border-bottom-color:var(--win-shadow);
+    font: 12px "MS Sans Serif", Tahoma, Arial, sans-serif;
+  }
+  .pwrap{ margin-top:10px; border:1px solid #808080; background:#fff; height:16px; padding:2px; box-sizing:border-box; }
+  .pbar{ height:100%; width:0%; background:linear-gradient(90deg,var(--xp-blue),var(--xp-blue2)); }
+  .pmeta{ margin-top:8px; display:flex; justify-content:space-between; gap:10px; color:#000; font:12px "MS Sans Serif",Tahoma,Arial,sans-serif; }
+
+  /* ===== Hand warning ===== */
+  .handWin{
+    position:absolute;
+    user-select:none;
+    background: transparent;
+    filter: drop-shadow(7px 10px 0 rgba(0,0,0,.55));
+  }
+  .handWin .frame{
+    position:absolute; inset:0;
+    width:100%; height:100%;
+    object-fit:contain;
+    pointer-events:none;
+    z-index:1;
+  }
+  .handWin .titleImg{
+    position:absolute;
+    left: 8.5%;
+    top: 23%;
+    width: 36%;
+    height:auto;
+    pointer-events:none;
+    z-index:5;
+  }
+  .handWin .bodyImg{
+    position:absolute;
+    left: 20%;
+    top: 36%;
+    width: 55%;
+    height:auto;
+    pointer-events:none;
+    z-index:5;
+  }
+  .handWin .warnIcon{
+    position:absolute;
+    left: 9%;
+    top: 37.5%;
+    width: 100px;
+    height:auto;
+    pointer-events:none;
+    z-index:6;
+    filter: drop-shadow(2px 2px 0 rgba(0,0,0,.25));
+  }
+  .handWin .cornerIcon{
+    position:absolute;
+    top: 18%;
+    right: 15%;
+    width: 200px;
+    height:auto;
+    pointer-events:none;
+    z-index:9;
+  }
+  .handWin .btns{
+    position:absolute;
+    right: 9%;
+    bottom: 35%;
+    display:flex;
+    gap:18px;
+    align-items:flex-end;
+    z-index:8;
+  }
+  .imgBtn{ appearance:none; border:none; background:transparent; padding:0; cursor:inherit; }
+  .imgBtn img{ display:block; height:60px; width:auto; filter: drop-shadow(3px 3px 0 rgba(0,0,0,.35)); }
+  .imgBtn:active img{ transform: translate(1px,1px); filter: drop-shadow(2px 2px 0 rgba(0,0,0,.35)); }
+
+  /* ===== Hand progress ===== */
+  .handProg{
+    position:absolute;
+    user-select:none;
+    background: transparent;
+    filter: drop-shadow(7px 10px 0 rgba(0,0,0,.55));
+  }
+  .handProg .frame{
+    position:absolute; inset:0;
+    width:100%; height:100%;
+    object-fit:contain;
+    pointer-events:none;
+    z-index:1;
+  }
+  .handProg .titleImg{
+    position:absolute;
+    left: 8%;
+    top: 25%;
+    width: 30%;
+    height:auto;
+    pointer-events:none;
+    z-index:3;
+  }
+  .handProg .bodyImg{
+    position:absolute;
+    left: 8%;
+    top: 38%;
+    width: 30%;
+    height:auto;
+    pointer-events:none;
+    z-index:3;
+  }
+  .handProg .barWrap{
+    position:absolute;
+    left: 20%;
+    right: 20%;
+    top: 55%;
+    height: 14px;
+    border: 2px solid #000;
+    background: rgba(255,255,255,0.35);
+    z-index:4;
+    box-sizing:border-box;
+  }
+  .handProg .bar{ height:100%; width:0%; background:#000; }
+  .handProg .meta{
+    position:absolute;
+    left: 20%;
+    right: 20%;
+    top: 61%;
+    display:flex;
+    justify-content:space-between;
+    font-size:14px;
+    color:#000;
+    z-index:4;
+    font-family: "MS Sans Serif", Tahoma, Arial, sans-serif;
+  }
+
+  /* ===== Random PNGs ===== */
+  .edgePop{
+    position:absolute;
+    user-select:none;
+    pointer-events:none;
+    filter: drop-shadow(6px 8px 0 rgba(0,0,0,.45));
+    opacity:0.95;
+  }
+  .edgePop img{
+    display:block;
+    width: 260px;
+    height:auto;
+    pointer-events:none;
+  }
+
+  #keys{
+    position:fixed; left:14px; bottom:12px;
+    z-index:20;
+    color:rgba(124,255,138,.70);
+    font:12px ui-monospace, Menlo, Consolas, monospace;
+    background:rgba(0,0,0,.45);
+    border:1px solid rgba(124,255,138,.18);
+    padding:6px 8px;
+    display:none;
+  }
+  #keys.show{display:block;}
+
+  /* === Bare overlay: only your frame === */
+  .bareOverlay{
+    position:fixed;
+    inset:0;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    z-index: 9999;
+    pointer-events:none;
+  }
+  .bareOverlay .frameStage{ pointer-events:auto; }
+
+  .frameStage{
+    position:relative;
+    width: var(--frame-w);
+    transform: translate(var(--frame-shift-x), var(--frame-shift-y));
+  }
+
+  .frameStage .frameImg{
+    width:100%;
+    height:auto;
+    display:block;
+    pointer-events:none;
+    user-select:none;
+    filter: drop-shadow(7px 10px 0 rgba(0,0,0,.55));
+  }
+
+  .frameStage .frameInner{
+    position:absolute;
+    z-index: 2;
+    left: var(--inner-left);
+    right: var(--inner-right);
+    top: var(--inner-top);
+    bottom: var(--inner-bottom);
+    overflow-y:auto;
+    overflow-x:hidden;
+    background:#fff;
+  }
+
+  .newsPage{
+    position:relative;
+    width:100%;
+  }
+  .newsLong{
+    width:100%;
+    height:auto;
+    display:block;
+    user-select:none;
+    pointer-events:none;
+  }
+
+  .bugClose{
+    position:absolute;
+    z-index: 60;
+    top: 20px;
+    right: 40px;
+    width: 180px;
+    height: 90px;
+    cursor: pointer;
+  }
+
+  .flipSlot{
+    position:absolute;
+    z-index: 40;
+    perspective: 1000px;
+    pointer-events:auto;
+  }
+  .flipCard{
+    width:100%; height:100%;
+    position:relative;
+    transform-style: preserve-3d;
+    transition: transform 550ms ease;
+  }
+  .flipSlot.flipped .flipCard{ transform: rotateY(180deg); }
+  .flipFace{
+    position:absolute;
+    inset:0;
+    backface-visibility:hidden;
+    overflow:hidden;
+  }
+  .flipFront img,
+  .flipBack img{
+    width:100%;
+    height:100%;
+    object-fit: cover;
+    display:block;
+  }
+  .flipBack{ transform: rotateY(180deg); }
+
+  .hotspot{
+    position:absolute;
+    z-index: 50;
+    cursor:pointer;
+    background: rgba(255,0,0,0);
+  }
+  #more1, #more2, #more3, #more4{
+   background: rgba(255,0,0,0);
+   outline: 1px solid rgba(255,0,0,0);
+  }
+
+  /* ===== Side popup ===== */
+  .sidePopup{
+    position: fixed;
+    right: 3.5vw;
+    top: 12vh;
+    width: min(340px, 26vw);
+    z-index: 100000;
+    display: none;
+    pointer-events: auto;
+  }
+
+  #popupRead{
+   right: 6vw;
+   top: 18vh;
+   width: min(420px, 32vw);
+  }
+   #popup1{
+    left: 6vw;
+    right: auto;
+    top: 14vh;
+  }
+
+   #popup2{
+    left: 10vw;
+    right: auto;
+    top: 34vh;
+  }
+
+   #popup3{
+    right: 9vw;
+    left: auto;
+    top: 1vh;
+    width: min(300px, 25vw);
+  }
+
+   #popup4{
+    right: 15vw;
+    left: auto;
+    top: 36vh;
+    width: min(300px, 25vw);
+  }
+
+  .sidePopup.show{
+    display: block;
+    animation: popupIn .18s ease-out;
+  }
+  .sidePopup img{
+    width: 100%;
+    height: auto;
+    display: block;
+    filter: drop-shadow(7px 10px 0 rgba(0,0,0,.45));
+    user-select: none;
+    pointer-events: none;
+  }
+  .sidePopupClose{
+    position: absolute;
+    top: 3%;
+    right: 3%;
+    width: 14%;
+    height: 14%;
+    cursor: pointer;
+    z-index: 2;
+  }
+  @keyframes popupIn{
+    from{ opacity:0; transform: translateY(8px) scale(.98); }
+    to{ opacity:1; transform: translateY(0) scale(1); }
+  }
+
+  /* 调试时可打开
+  .hotspot{ background: rgba(255,0,0,.22); outline: 1px solid rgba(255,0,0,.65); }
+  .flipSlot{ outline: 2px solid rgba(0,255,0,.65); }
+  */
+</style>
+</head>
+
+<body>
+<div id="desktop"></div>
+
+<div id="iconColumn">
+  <div class="deskIcon"><div class="ico" style="background:url('icons/recycle.png') center/contain no-repeat;"></div><div class="label">Recycle Bin</div></div>
+  <div class="deskIcon"><div class="ico" style="background:url('icons/internet.png') center/contain no-repeat;"></div><div class="label">Internet</div></div>
+  <div class="deskIcon"><div class="ico" style="background:url('icons/computer.png') center/contain no-repeat;"></div><div class="label">My Computer</div></div>
+  <div class="deskIcon"><div class="ico" style="background:url('icons/search.png') center/contain no-repeat;"></div><div class="label">Search</div></div>
+  <div class="deskIcon"><div class="ico" style="background:url('icons/folder.png') center/contain no-repeat;"></div><div class="label">Documents</div></div>
+  <div class="deskIcon"><div class="ico" style="background:url('icons/network.png') center/contain no-repeat;"></div><div class="label">System</div></div>
+
+  <div class="deskIcon" id="ecoApp" style="display:none;">
+    <div class="ico" style="background:url('icons/virus.png') center/contain no-repeat;"></div>
+    <div class="label">SystemEcoUpdate</div>
+  </div>
+</div>
+
+<div id="taskbar">
+  <div id="startBtn"><b>Start</b></div>
+  <div id="tray"><span id="clock">00:00</span></div>
+</div>
+
+<div id="windowLayer"></div>
+<div id="keys">Esc: restart</div>
+
+<script>
+/* ==============================
+   ASSETS
+   ============================== */
+const HAND_FRAME        = "hand_warning.png";
+const HAND_BTN_CANCEL   = "cancel.png";
+const HAND_BTN_CONTINUE = "continue.png";
+const HAND_WARN_ICON    = "warn_icon.png";
+const HAND_CORNER_ICON  = "corner.png";
+const HAND_TEXT_TITLE   = "fonts/system-warning-title.png";
+const HAND_TEXT_BODY    = "fonts/system-warning-body.png";
+
+const HAND_PROG_FRAME   = "hand_progress_frame.png";
+const HAND_PROG_TITLE   = "fonts/progress_title.png";
+const HAND_PROG_BODY    = "fonts/progress_body.png";
+
+const EDGE_PNG_A        = "edge_warning_a.png";
+const EDGE_PNG_B        = "edge_warning_b.png";
+
+const FINAL_ASSETS = [
+  "news_long.png","frame.png",
+  "card1_front.png","card1_back.png",
+  "card2_front.png","card2_back.png",
+  "card3_front.png","card3_back.png",
+  "popup1.png","popup2.png","popup3.png","popup4.png"
+];
+
+let finalAssetsReady = null;
+
+function warmFinalAssets(){
+  if(finalAssetsReady) return finalAssetsReady;
+
+  finalAssetsReady = Promise.all(
+    FINAL_ASSETS.map((src)=>{
+      const img = new Image();
+      img.src = src;
+      if(typeof img.decode === "function"){
+        return img.decode().catch(()=>{});
+      }
+      return Promise.resolve();
+    })
+  );
+
+  return finalAssetsReady;
+}
+
+warmFinalAssets();
+
+/* ===== clock ===== */
+const clockEl = document.getElementById('clock');
+function tickClock(){
+  const d = new Date();
+  clockEl.textContent = String(d.getHours()).padStart(2,'0') + ":" + String(d.getMinutes()).padStart(2,'0');
+}
+tickClock(); setInterval(tickClock, 1000);
+
+/* ===== selection ===== */
+function selectIcon(el){
+  document.querySelectorAll('.deskIcon').forEach(i=>i.classList.remove('selected'));
+  el.classList.add('selected');
+}
+document.querySelectorAll('.deskIcon').forEach(icon=>{
+  icon.addEventListener('click', ()=> selectIcon(icon));
+});
+document.addEventListener('click', (e)=>{
+  if(!e.target.closest('.deskIcon')) document.querySelectorAll('.deskIcon').forEach(i=>i.classList.remove('selected'));
+});
+
+/* ===== window layer ===== */
+const windowLayer = document.getElementById('windowLayer');
+const keys = document.getElementById('keys');
+let zTop = 100;
+function clearWindows(){ windowLayer.innerHTML = ''; }
+
+/* ==============================
+   AUDIO: thud
+   ============================== */
+let audioCtx = null;
+function ensureAudio(){
+  if(audioCtx) return;
+  audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+}
+function thud(timeOffset=0, amp=0.35){
+  ensureAudio();
+  const t = audioCtx.currentTime + timeOffset;
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  osc.type = 'triangle';
+  osc.frequency.setValueAtTime(170, t);
+  osc.frequency.exponentialRampToValueAtTime(85, t+0.12);
+  gain.gain.setValueAtTime(0.0001, t);
+  gain.gain.exponentialRampToValueAtTime(amp, t+0.01);
+  gain.gain.exponentialRampToValueAtTime(0.0001, t+0.18);
+  osc.connect(gain); gain.connect(audioCtx.destination);
+  osc.start(t); osc.stop(t+0.22);
+}
+
+/* ===== Win95 helper ===== */
+function createWin({x,y,width=440,title,extraHtml="",primaryLabel=null,secondaryLabel=null,primaryFn,secondaryFn}){
+  const w = document.createElement('div');
+  w.className = 'win95';
+  w.style.left = x + 'px';
+  w.style.top = y + 'px';
+  w.style.width = width + 'px';
+  w.style.zIndex = String(zTop++);
+
+  w.innerHTML = `
+    <div class="titlebar">
+      <div class="left"><div class="icon"></div><div>${title}</div></div>
+      <div class="controls"><div class="btnbox"></div><div class="btnbox"></div><div class="btnbox"></div></div>
+    </div>
+    <div class="body">
+      ${extraHtml}
+      <div class="actions">
+        ${secondaryLabel ? `<button class="wbtn secondary">${secondaryLabel}</button>` : ``}
+        ${primaryLabel ? `<button class="wbtn primary">${primaryLabel}</button>` : ``}
+      </div>
+    </div>
+  `;
+  windowLayer.appendChild(w);
+
+  const primary = w.querySelector('button.primary');
+  const secondary = w.querySelector('button.secondary');
+  if(primary) primary.addEventListener('click', ()=> primaryFn && primaryFn(w));
+  if(secondary) secondary.addEventListener('click', ()=> secondaryFn && secondaryFn(w));
+  w.addEventListener('mousedown', ()=>{ w.style.zIndex = String(zTop++); });
+
+  return w;
+}
+
+/* ===== Hand warning ===== */
+function createHandWarning({x,y,width=860,onContinue,onCancel}){
+  const aspect = 1186 / 2261;
+  const height = Math.round(width * aspect);
+
+  const w = document.createElement("div");
+  w.className = "handWin";
+  w.style.left = x + "px";
+  w.style.top = y + "px";
+  w.style.width = width + "px";
+  w.style.height = height + "px";
+  w.style.zIndex = "7000";
+
+  w.innerHTML = `
+    <img class="frame" src="${HAND_FRAME}" alt="">
+    <img class="cornerIcon" src="${HAND_CORNER_ICON}" alt="">
+    <img class="titleImg" src="${HAND_TEXT_TITLE}" alt="">
+    <img class="bodyImg"  src="${HAND_TEXT_BODY}"  alt="">
+    <img class="warnIcon" src="${HAND_WARN_ICON}"  alt="">
+    <div class="btns">
+      <button class="imgBtn cancel" aria-label="Cancel"><img src="${HAND_BTN_CANCEL}" alt=""></button>
+      <button class="imgBtn cont" aria-label="Continue"><img src="${HAND_BTN_CONTINUE}" alt=""></button>
+    </div>
+  `;
+  windowLayer.appendChild(w);
+
+  w.querySelector(".cancel").addEventListener("click", ()=> onCancel && onCancel(w));
+  w.querySelector(".cont").addEventListener("click", ()=> onContinue && onContinue(w));
+
+  return w;
+}
+
+/* ===== Hand progress ===== */
+function createHandProgress({x,y,width=700,durationMs=2400,onDone}){
+  const aspect = 1186 / 2261;
+  const height = Math.round(width * aspect);
+
+  const w = document.createElement("div");
+  w.className = "handProg";
+  w.style.left = x + "px";
+  w.style.top = y + "px";
+  w.style.width = width + "px";
+  w.style.height = height + "px";
+  w.style.zIndex = "9000";
+
+  w.innerHTML = `
+    <img class="frame" src="${HAND_PROG_FRAME}" alt="">
+    <img class="titleImg" src="${HAND_PROG_TITLE}" alt="">
+    <img class="bodyImg"  src="${HAND_PROG_BODY}"  alt="">
+    <div class="barWrap"><div class="bar"></div></div>
+    <div class="meta"><div class="status">sync: MIRROR_FEED/07</div><div class="pct">0%</div></div>
+  `;
+  windowLayer.appendChild(w);
+
+  const bar = w.querySelector(".bar");
+  const pctEl = w.querySelector(".pct");
+  const statusEl = w.querySelector(".status");
+
+  const phrases = [
+    "sync: MIRROR_FEED/07",
+    "decrypt: ARCHIVE HEADER",
+    "mount: TEMPORAL CHANNEL",
+    "verify: SIGNAL INTEGRITY",
+    "render: WIRE COPY",
+    "apply: ECO DIRECTIVE PATCH"
+  ];
+
+  const start = performance.now();
+  let lastPhraseSwap = start;
+  let phraseIdx = 0;
+
+  function frame(t){
+    const p = Math.min(1, (t - start) / durationMs);
+    const pct = Math.round(p * 100);
+
+    bar.style.width = pct + "%";
+    pctEl.textContent = pct + "%";
+
+    if(t - lastPhraseSwap > 220 + Math.random()*220){
+      statusEl.textContent = phrases[phraseIdx % phrases.length];
+      phraseIdx++;
+      lastPhraseSwap = t;
+    }
+
+    if(p < 1){
+      requestAnimationFrame(frame);
+    }else{
+      onDone && onDone(w);
+    }
+  }
+  requestAnimationFrame(frame);
+
+  return w;
+}
+
+/* ===== Random PNGs ===== */
+let edgeTimers = [];
+function clearEdgeTimers(){ edgeTimers.forEach(t=>clearTimeout(t)); edgeTimers=[]; }
+function removeEdgePNGs(){ windowLayer.querySelectorAll(".edgePop").forEach(el=>el.remove()); }
+
+function spawnEdgePNGs({
+  countEdge=10,
+  countMid=7,
+  duration=2400,
+  avoidRect=null,
+  approxW=280,
+  approxH=210,
+  pad=14
+} = {}){
+  clearEdgeTimers();
+  removeEdgePNGs();
+
+  const rects = [];
+  const total = countEdge + countMid;
+
+  const intersects = (a,b)=>!(
+    a.x + a.w <= b.x ||
+    b.x + b.w <= a.x ||
+    a.y + a.h <= b.y ||
+    b.y + b.h <= a.y
+  );
+
+  function inAvoidRect(r){
+    if(!avoidRect) return false;
+    return intersects(r, avoidRect);
+  }
+
+  function placeOne(mode){
+    const src = Math.random()<0.5 ? EDGE_PNG_A : EDGE_PNG_B;
+
+    let tries=0;
+    let r=null;
+
+    while(tries++ < 400){
+      let cx=0, cy=0;
+
+      if(mode==="edge"){
+        const band = 90;
+        const edge = Math.floor(Math.random()*4);
+        if(edge===0){ cx = 60 + Math.random()*(innerWidth-120); cy = 10 + Math.random()*band; }
+        if(edge===1){ cx = innerWidth - (10 + Math.random()*band); cy = 60 + Math.random()*(innerHeight-140); }
+        if(edge===2){ cx = 60 + Math.random()*(innerWidth-120); cy = innerHeight - (70 + Math.random()*band); }
+        if(edge===3){ cx = 10 + Math.random()*band; cy = 60 + Math.random()*(innerHeight-140); }
+        cx += (Math.random()-0.5)*140;
+        cy += (Math.random()-0.5)*180;
+      }else{
+        const ccx = innerWidth/2, ccy = innerHeight/2;
+        const rMin = Math.min(innerWidth, innerHeight) * 0.18;
+        const rMax = Math.min(innerWidth, innerHeight) * 0.42;
+        const a = Math.random()*Math.PI*2;
+        const rr = rMin + Math.random()*(rMax-rMin);
+        cx = ccx + Math.cos(a)*rr + (Math.random()-0.5)*120;
+        cy = ccy + Math.sin(a)*rr + (Math.random()-0.5)*160;
+      }
+
+      const x = Math.max(8, Math.min(innerWidth - approxW - 8, cx - approxW/2));
+      const y = Math.max(8, Math.min(innerHeight - approxH - 8, cy - approxH/2));
+      r = { x, y, w: approxW + pad, h: approxH + pad };
+
+      if(inAvoidRect(r)) continue;
+
+      let hit = false;
+      for(const rr of rects){
+        if(intersects(r, rr)){ hit = true; break; }
+      }
+      if(hit) continue;
+
+      break;
+    }
+
+    if(!r) return;
+
+    rects.push(r);
+
+    const d = document.createElement("div");
+    d.className = "edgePop";
+    d.style.left = (r.x + approxW/2) + "px";
+    d.style.top  = (r.y + approxH/2) + "px";
+    d.style.zIndex = "8800";
+
+    const rot = (Math.random()*220 - 110);
+    const flipX = Math.random()<0.45 ? -1 : 1;
+    const flipY = Math.random()<0.25 ? -1 : 1;
+    d.style.transform = `translate(-50%,-50%) rotate(${rot}deg) scale(${flipX},${flipY})`;
+
+    d.innerHTML = `<img src="${src}" alt="">`;
+    windowLayer.appendChild(d);
+
+    thud(Math.random()*0.03, 0.22 + Math.random()*0.10);
+  }
+
+  for(let i=0;i<total;i++){
+    const delay = (duration/Math.max(1,total-1)) * i;
+    edgeTimers.push(setTimeout(()=> placeOne(i < countEdge ? "edge" : "mid"), delay));
+  }
+
+  const stop = ()=>{
+    clearEdgeTimers();
+    removeEdgePNGs();
+  };
+  return stop;
+}
+
+/* ===== SystemEcoUpdate icon + double click ===== */
+const ecoApp = document.getElementById('ecoApp');
+let lastClickTime = 0;
+ecoApp.addEventListener('click', ()=>{
+  const now = performance.now();
+  if(now - lastClickTime < 320) openVirusFlow();
+  lastClickTime = now;
+});
+
+/* ===== Install window then show icon ===== */
+function showInstallWindowThenApp(){
+  windowLayer.style.display = 'block';
+  clearWindows();
+
+  const width = 500;
+  const x = Math.round(innerWidth/2 - width/2);
+  const y = Math.round(innerHeight/2 - 140);
+
+  const extraHtml = `
+    <div style="margin-top:6px;font:12px 'MS Sans Serif',Tahoma,Arial,sans-serif;">
+      <div><b>Downloading: SystemEcoUpdate</b></div>
+      <div class="pwrap"><div class="pbar" id="instbar"></div></div>
+      <div class="pmeta">
+        <div id="inststatus">Connecting…</div>
+        <div id="instpct">0%</div>
+      </div>
+    </div>
+  `;
+
+  const w = createWin({ x,y,width, title:"Setup", extraHtml });
+
+  const bar = w.querySelector('#instbar');
+  const pct = w.querySelector('#instpct');
+  const status = w.querySelector('#inststatus');
+
+  let p = 0;
+  const phrases = ["Connecting…","Downloading…","Verifying…","Installing…","Finalizing…"];
+  let idx = 0;
+
+  const timer = setInterval(()=>{
+    const step = 3 + Math.random()*9;
+    const slow = p>75 ? 0.6 : 1.0;
+    p = Math.min(100, p + step*slow);
+
+    bar.style.width = p.toFixed(0) + '%';
+    pct.textContent = p.toFixed(0) + '%';
+
+    if(Math.random() < 0.35){
+      status.textContent = phrases[idx % phrases.length];
+      idx++;
+    }
+
+    if(p >= 100){
+      clearInterval(timer);
+      setTimeout(()=>{
+        windowLayer.style.display = 'none';
+        clearWindows();
+        ecoApp.style.display = 'block';
+        ecoApp.classList.add('appear');
+      }, 220);
+    }
+  }, 90);
+}
+setTimeout(showInstallWindowThenApp, 700);
+
+/* ===== Main flow ===== */
+function openVirusFlow(){
+  windowLayer.style.display = 'block';
+  clearWindows();
+  clearEdgeTimers();
+
+  const warnW = 860;
+  const warnX = Math.round(innerWidth/2 - warnW/2);
+  const warnY = Math.round(innerHeight/2 - 210);
+
+  createHandWarning({
+    x: warnX, y: warnY, width: warnW,
+    onContinue: (handWin)=>{
+      ensureAudio();
+      thud(0, 0.30);
+      warmFinalAssets();
+      handWin.remove();
+
+      const SYNC_MS = 2400;
+      const progW = 720;
+      const progX = Math.round(innerWidth/2 - progW/2) + 18;
+      const progY = Math.round(innerHeight/2 - 160) + 18;
+
+      const progH = Math.round(progW*(1186/2261));
+      const avoidRect = {
+        x: progX - 170,
+        y: progY - 150,
+        w: progW + 340,
+        h: progH + 300
+      };
+
+      const stopPNGs = spawnEdgePNGs({
+        countEdge: 10,
+        countMid: 7,
+        duration: SYNC_MS,
+        avoidRect,
+        approxW: 290,
+        approxH: 220,
+        pad: 18
+      });
+
+      const progWin = createHandProgress({
+        x: progX, y: progY, width: progW,
+        durationMs: SYNC_MS,
+        onDone: ()=>{
+          (async ()=>{
+            setTimeout(async ()=>{
+              stopPNGs();
+              progWin.remove();
+              await warmFinalAssets();
+              clearWindows();
+              openNewsWindow();
+            }, 250);
+          })();
+        }
+      });
+    },
+    onCancel: ()=> location.reload()
+  });
+}
+
+/* ===== Final: your frame + scroll + flip cards + side popups ===== */
+function openNewsWindow(){
+  clearWindows();
+  windowLayer.style.display = "block";
+
+  const overlay = document.createElement("div");
+  overlay.className = "bareOverlay";
+
+  overlay.innerHTML = `
+    <div class="frameStage" id="frameStage">
+      <div class="bugClose" title="close"></div>
+      <img class="frameImg" src="frame.png" alt="frame" loading="eager" decoding="async">
+
+      <div class="frameInner">
+        <div class="newsPage" id="newsPage">
+          <img class="newsLong" id="newsLong" src="news_long.png" alt="news long" loading="eager" decoding="async">
+
+          <!-- flip cards -->
+          <div class="flipSlot" id="slot1" style="left:var(--slot1-x); top:var(--slot1-y); width:var(--slot1-w); height:var(--slot1-h);">
+            <div class="flipCard">
+              <div class="flipFace flipFront"><img src="card1_front.png" alt=""></div>
+              <div class="flipFace flipBack"><img src="card1_back.png" alt=""></div>
+            </div>
+          </div>
+
+          <div class="flipSlot" id="slot2" style="left:var(--slot2-x); top:var(--slot2-y); width:var(--slot2-w); height:var(--slot2-h);">
+            <div class="flipCard">
+              <div class="flipFace flipFront"><img src="card2_front.png" alt=""></div>
+              <div class="flipFace flipBack"><img src="card2_back.png" alt=""></div>
+            </div>
+          </div>
+
+          <div class="flipSlot" id="slot3" style="left:var(--slot3-x); top:var(--slot3-y); width:var(--slot3-w); height:var(--slot3-h);">
+            <div class="flipCard">
+              <div class="flipFace flipFront"><img src="card3_front.png" alt=""></div>
+              <div class="flipFace flipBack"><img src="card3_back.png" alt=""></div>
+            </div>
+          </div>
+
+          <!-- flip hotspots -->
+          <div class="hotspot" id="hot1" data-target="slot1" style="left:var(--hot1-x); top:var(--hot1-y); width:var(--hot1-w); height:var(--hot1-h);"></div>
+          <div class="hotspot" id="hot2" data-target="slot2" style="left:var(--hot2-x); top:var(--hot2-y); width:var(--hot2-w); height:var(--hot2-h);"></div>
+          <div class="hotspot" id="hot3" data-target="slot3" style="left:var(--hot3-x); top:var(--hot3-y); width:var(--hot3-w); height:var(--hot3-h);"></div>
+
+          <!-- more news text hotspots -->
+          <div class="hotspot" id="more1" data-popup="popup1" style="left:var(--more1-x); top:var(--more1-y); width:var(--more1-w); height:var(--more1-h);"></div>
+          <div class="hotspot" id="more2" data-popup="popup2" style="left:var(--more2-x); top:var(--more2-y); width:var(--more2-w); height:var(--more2-h);"></div>
+          <div class="hotspot" id="more3" data-popup="popup3" style="left:var(--more3-x); top:var(--more3-y); width:var(--more3-w); height:var(--more3-h);"></div>
+          <div class="hotspot" id="more4" data-popup="popup4" style="left:var(--more4-x); top:var(--more4-y); width:var(--more4-w); height:var(--more4-h);"></div>
+          <!-- read more hotspot -->
+          <div class="hotspot" id="readmore"
+          data-popup="popupRead"
+         style="left:var(--readmore-x); top:var(--readmore-y); width:var(--readmore-w); height:var(--readmore-h);"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- side popups -->
+    <div class="sidePopup" id="popup1">
+      <div class="sidePopupClose"></div>
+      <img src="popup1.png" alt="popup 1">
+    </div>
+
+    <div class="sidePopup" id="popup2">
+      <div class="sidePopupClose"></div>
+      <img src="popup2.png" alt="popup 2">
+    </div>
+
+    <div class="sidePopup" id="popup3">
+      <div class="sidePopupClose"></div>
+      <img src="popup3.png" alt="popup 3">
+    </div>
+
+    <div class="sidePopup" id="popup4">
+      <div class="sidePopupClose"></div>
+      <img src="popup4.png" alt="popup 4">
+    </div>
+
+    <div class="sidePopup" id="popupRead">
+    <div class="sidePopupClose"></div>
+    <img src="readmore_popup.png" alt="read more">
+</div>
+  `;
+
+  windowLayer.appendChild(overlay);
+
+  // close full page => reload
+  overlay.querySelector(".bugClose").addEventListener("click", (e)=>{
+    e.stopPropagation();
+    location.reload();
+  });
+
+  // hotspot => flip or popup
+  overlay.querySelectorAll(".hotspot").forEach(h=>{
+    h.addEventListener("click", (e)=>{
+      e.stopPropagation();
+
+      if(h.dataset.target){
+        const id = h.dataset.target;
+        const slot = overlay.querySelector("#" + id);
+        if(slot) slot.classList.toggle("flipped");
+      }
+
+      if(h.dataset.popup){
+        const pop = overlay.querySelector("#" + h.dataset.popup);
+        if(pop) pop.classList.add("show");
+      }
+    });
+  });
+
+  // popup close
+  overlay.querySelectorAll(".sidePopupClose").forEach(btn=>{
+    btn.addEventListener("click", (e)=>{
+      e.stopPropagation();
+      const pop = btn.parentElement;
+      if(pop) pop.classList.remove("show");
+    });
+  });
+
+  keys.classList.add('show');
+}
+
+/* Esc restart */
+document.addEventListener('keydown', (e)=>{
+  if(e.key === 'Escape') location.reload();
+});
+</script>
+</body>
+</html>
